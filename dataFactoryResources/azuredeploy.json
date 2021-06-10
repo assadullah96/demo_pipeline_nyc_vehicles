@@ -539,103 +539,102 @@
                             "[concat(variables('factoryId'), '/datasets/sql_db_operational_sink')]"
                         ]
                     },
-                    {
-                        "name": "[concat(parameters('factoryName'), '/transformations_nyc_vehicles')]",
-                        "type": "Microsoft.DataFactory/factories/dataflows",
-                        "apiVersion": "2018-06-01",
-                        "properties": {
-                            "folder": {
-                                "name": "nyc_vehicles_transformations"
+                        {
+                            "name": "[concat(parameters('factoryName'), '/transformations_nyc_vehicles')]",
+                            "type": "Microsoft.DataFactory/factories/dataflows",
+                            "apiVersion": "2018-06-01",
+                            "properties": {
+                                "folder": {
+                                    "name": "nyc_vehicles_transformations"
+                                },
+                                "type": "MappingDataFlow",
+                                "typeProperties": {
+                                    "sources": [
+                                        {
+                                            "dataset": {
+                                                "referenceName": "csv_source_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sourceCSV"
+                                        }
+                                    ],
+                                    "sinks": [
+                                        {
+                                            "dataset": {
+                                                "referenceName": "csv_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkCSV"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "csv_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "SinkLatestCSV"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "json_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkJsonl"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "json_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkLatestJsonl"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "parquet_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkParquet"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "parquet_sink_dataset",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkLatestParquet"
+                                        },
+                                        {
+                                            "dataset": {
+                                                "referenceName": "sql_db_staging_sink",
+                                                "type": "DatasetReference"
+                                            },
+                                            "name": "sinkSQLStagging"
+                                        }
+                                    ],
+                                    "transformations": [
+                                        {
+                                            "name": "LoadDateAndTime"
+                                        },
+                                        {
+                                            "name": "CapitalizeInitials"
+                                        },
+                                        {
+                                            "name": "RearrangeColumns"
+                                        }
+                                    ],
+                                    "script": "parameters{\n\tfilename as string ('vechiclesnyc_curated_data'),\n\trunid as string ('runtime_guid')\n}\nsource(output(\n\t\tactive as boolean,\n\t\tvehicle_license_number as string,\n\t\tname as string,\n\t\tlicense_type as string,\n\t\texpiration_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tpermit_license_number as string,\n\t\tdmv_license_plate_number as string,\n\t\tvehicle_vin_number as string,\n\t\twheelchair_accessible as string,\n\t\tcertification_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\thack_up_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tvehicle_year as short,\n\t\tbase_number as string,\n\t\tbase_name as string,\n\t\tbase_type as string,\n\t\tveh as string,\n\t\tbase_telephone_number as string,\n\t\twebsite as string,\n\t\tbase_address as string,\n\t\treason as string,\n\t\torder_date as string,\n\t\tlast_date_updated as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tlast_time_updated as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> sourceCSV\nsourceCSV derive(Load_Time = currentTimestamp(),\n\t\tLoad_Date = currentDate()) ~> LoadDateAndTime\nLoadDateAndTime select(mapColumn(\n\t\teach(patternMatch(`.*`),\n\t\t\tregexReplace(initCap(regexReplace($$,'_',' ')),' ','_') = $$)\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> CapitalizeInitials\nCapitalizeInitials select(mapColumn(\n\t\tLoad_Date,\n\t\tLoad_Time,\n\t\tActive,\n\t\tVehicle_License_Number,\n\t\tName,\n\t\tLicense_Type,\n\t\tExpiration_Date,\n\t\tPermit_License_Number,\n\t\tDmv_License_Plate_Number,\n\t\tVehicle_Vin_Number,\n\t\tWheelchair_Accessible,\n\t\tCertification_Date,\n\t\tHack_Up_Date,\n\t\tVehicle_Year,\n\t\tBase_Number,\n\t\tBase_Name,\n\t\tBase_Type,\n\t\tVeh,\n\t\tBase_Telephone_Number,\n\t\tWebsite,\n\t\tBase_Address,\n\t\tReason,\n\t\tOrder_Date,\n\t\tLast_Date_Updated,\n\t\tLast_Time_Updated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> RearrangeColumns\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.csv'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkCSV\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename, '.csv'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkLatestCSV\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.jsonl'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkJsonl\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename, '.jsonl'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkLatestJsonl\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet',\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.parquet'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkParquet\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet',\n\tpartitionFileNames:[(concat($filename, '.parquet'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkLatestParquet\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\trecreate:true,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> sinkSQLStagging"
+                                }
                             },
-                            "type": "MappingDataFlow",
-                            "typeProperties": {
-                                "sources": [
-                                    {
-                                        "dataset": {
-                                            "referenceName": "csv_source_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sourceCSV"
-                                    }
-                                ],
-                                "sinks": [
-                                    {
-                                        "dataset": {
-                                            "referenceName": "csv_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkCSV"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "csv_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "SinkLatestCSV"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "json_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkJsonl"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "json_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkLatestJsonl"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "parquet_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkParquet"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "parquet_sink_dataset",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkLatestParquet"
-                                    },
-                                    {
-                                        "dataset": {
-                                            "referenceName": "sql_db_staging_sink",
-                                            "type": "DatasetReference"
-                                        },
-                                        "name": "sinkSQLStagging"
-                                    }
-                                ],
-                                "transformations": [
-                                    {
-                                        "name": "LoadDateAndTime"
-                                    },
-                                    {
-                                        "name": "CapitalizeInitials"
-                                    },
-                                    {
-                                        "name": "RearrangeColumns"
-                                    }
-                                ],
-                                "script": "parameters{\n\tfilename as string ('vechiclesnyc_curated_data'),\n\trunid as string ('runtime_guid')\n}\nsource(output(\n\t\tactive as boolean,\n\t\tvehicle_license_number as string,\n\t\tname as string,\n\t\tlicense_type as string,\n\t\texpiration_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tpermit_license_number as string,\n\t\tdmv_license_plate_number as string,\n\t\tvehicle_vin_number as string,\n\t\twheelchair_accessible as string,\n\t\tcertification_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\thack_up_date as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tvehicle_year as short,\n\t\tbase_number as string,\n\t\tbase_name as string,\n\t\tbase_type as string,\n\t\tveh as string,\n\t\tbase_telephone_number as string,\n\t\twebsite as string,\n\t\tbase_address as string,\n\t\treason as string,\n\t\torder_date as string,\n\t\tlast_date_updated as timestamp 'yyyy-MM-dd\\'T\\'HH:mm:ss',\n\t\tlast_time_updated as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> sourceCSV\nsourceCSV derive(Load_Time = currentTimestamp(),\n\t\tLoad_Date = currentDate()) ~> LoadDateAndTime\nLoadDateAndTime select(mapColumn(\n\t\teach(patternMatch(`.*`),\n\t\t\tregexReplace(initCap(regexReplace($$,'_',' ')),' ','_') = $$)\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> CapitalizeInitials\nCapitalizeInitials select(mapColumn(\n\t\tLoad_Date,\n\t\tLoad_Time,\n\t\tActive,\n\t\tVehicle_License_Number,\n\t\tName,\n\t\tLicense_Type,\n\t\tExpiration_Date,\n\t\tPermit_License_Number,\n\t\tDmv_License_Plate_Number,\n\t\tVehicle_Vin_Number,\n\t\tWheelchair_Accessible,\n\t\tCertification_Date,\n\t\tHack_Up_Date,\n\t\tVehicle_Year,\n\t\tBase_Number,\n\t\tBase_Name,\n\t\tBase_Type,\n\t\tVeh,\n\t\tBase_Telephone_Number,\n\t\tWebsite,\n\t\tBase_Address,\n\t\tReason,\n\t\tOrder_Date,\n\t\tLast_Date_Updated,\n\t\tLast_Time_Updated\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> RearrangeColumns\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.csv'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkCSV\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename, '.csv'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkLatestCSV\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.jsonl'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkJsonl\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat($filename, '.jsonl'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkLatestJsonl\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet',\n\tpartitionFileNames:[(concat($filename,'_', $runid,'.parquet'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkParquet\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet',\n\tpartitionFileNames:[(concat($filename, '.parquet'))],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> sinkLatestParquet\nRearrangeColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\ttruncate:true,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> sinkSQLStagging"
-                            }
+                            "dependsOn": [
+                                "[concat(variables('factoryId'), '/datasets/csv_source_dataset')]",
+                                "[concat(variables('factoryId'), '/datasets/csv_sink_dataset')]",
+                                "[concat(variables('factoryId'), '/datasets/json_sink_dataset')]",
+                                "[concat(variables('factoryId'), '/datasets/parquet_sink_dataset')]",
+                                "[concat(variables('factoryId'), '/datasets/sql_db_staging_sink')]"
+                            ]
                         },
-                        "dependsOn": [
-                            "[parameters('factoryName')]",
-                            "[concat(variables('factoryId'), '/datasets/csv_source_dataset')]",
-                            "[concat(variables('factoryId'), '/datasets/csv_sink_dataset')]",
-                            "[concat(variables('factoryId'), '/datasets/json_sink_dataset')]",
-                            "[concat(variables('factoryId'), '/datasets/parquet_sink_dataset')]",
-                            "[concat(variables('factoryId'), '/datasets/sql_db_staging_sink')]"
-                        ]
-                    },
 
 
 
-            {
+                       {
                         "name": "[concat(parameters('factoryName'), '/nyc_vehicles_pipeline')]",
                         "type": "Microsoft.DataFactory/factories/pipelines",
                         "apiVersion": "2018-06-01",

@@ -44,8 +44,6 @@
             "apiVersion": "2019-06-01-preview",
             "location": "[parameters('location')]",
             "tags": {
-                "Environment": "Public",
-                "AssociatedDataSet": "CovidNYC"
             },
             "properties": {
               "administratorLogin": "[parameters('sqlServerAdministratorLogin')]",
@@ -59,8 +57,6 @@
                     "apiVersion": "2019-06-01-preview",
                     "location": "[parameters('location')]",
                     "tags": {
-                        "Environment": "Public",
-                        "AssociatedDataSet": "CovidNYC"
                     },
                     "sku": {
                         "name": "Basic",
@@ -79,10 +75,6 @@
                     "type": "firewallrules",
                     "apiVersion": "2015-05-01-preview",
                     "location": "[parameters('location')]",
-                    "tags": {
-                        "Environment": "Public",
-                        "AssociatedDataSet": "CovidNYC"
-                    },
                     "properties": {
                         "endIpAddress": "0.0.0.0",
                         "startIpAddress": "0.0.0.0"
