@@ -1,0 +1,251 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "defaultValue": "demoPublicADF",
+            "type": "string",
+            "metadata": {
+                "description": "The name you provide will append with a unique sting to make it globally available. The name can contain only letters, numbers and hyphens. The first and last characters must be a letter or number. Spaces are not allowed."
+            }
+        },
+        "storageAccountName": {
+            "defaultValue": "demopubsa",
+            "type": "string",
+            "metadata": {
+                "description": "The name you provide will be appended with a unique sting to make it globally available. The field can contain only lowercase letters and numbers. Name must be between 1 and 11 characters."
+            }
+        },
+        "location": {
+            "defaultValue": "eastus",
+            "type": "string",
+            "metadata": {
+                "description": "Location of the data factory. Currently, only East US, East US 2, and West Europe are supported. "
+            }
+        },
+        "serverName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name you provide will be appended with a unique sting to make it globally available. Your server name can contain only lowercase letters, numbers, and '-', but can't start or end with '-' or have more than 50 characters."
+            },
+            "defaultValue": "demo-public-sql-server"
+        },
+        "databaseName": {
+            "type": "string",
+            "metadata": {
+                "description": "Value should not match special patterns. It should contain a length of maximum of 128."
+            },
+            "defaultValue": "demopubsqldb"
+        },
+        "sqlServerAdministratorLogin": {
+            "type": "string",
+            "metadata": {
+                "description": "Your login name must not contain a SQL Identifier or a typical system name (like admin, administrator, sa, root, dbmanager, loginmanager, etc.) or a built-in database user or role (like dbo, guest, public, etc.)"
+            },
+            "defaultValue": "masteruser"
+        },
+        "sqlServerAdministratorLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Your password must be at least 8 characters in length. Your password must be no more than 128 characters in length. Your password must contain characters from three of the following categories – English uppercase letters, English lowercase letters, numbers (0-9), and non-alphanumeric characters (!, $, #, %, etc.). Your password cannot contain all or part of the login name. Part of a login name is defined as three or more consecutive alphanumeric characters."
+            }
+        },
+       
+        "keyVaultName": {
+            "type": "string",
+            "defaultValue": "demokv",
+            "metadata": {
+              "description": "Specifies the name of the key vault."
+            }
+          },
+          "azureUserObjectId": {
+              "type": "string",
+              "metadata": {
+                "description": "Kindly give your Object Id so that full permissions to key vault can be assigned to you. To get your Object Id, search 'Users' in the search bar in azure portal. Then click on your name and in the 'Profile' tab your Object Id is present under 'Identity' section"
+              }
+          }
+    },
+    "variables": {
+        "factoryName": "[concat(parameters('factoryName'), uniquestring(resourceGroup().id))]",
+        "storageAccountName": "[concat(parameters('storageAccountName'), uniquestring(resourceGroup().id))]",
+        "keyVaultName": "[concat(parameters('keyVaultName'), uniquestring(resourceGroup().id))]",
+        "serverName": "[concat(parameters('serverName'), uniquestring(resourceGroup().id))]",
+        "storageTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/storageAccount/azuredeploy.json",
+        "keyVaultTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/keyVault/azuredeploy.json",
+        "keyVaultPermissionsUpdateTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/keyVaultPermissionsUpdate/azuredeploy.json",
+        "emptyDataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/dataFactory/azuredeploy.json",
+        "sqlServerTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/sqlServer/azuredeploy.json",
+        "dataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/dataFactoryResources/azuredeploy.json"    
+    },
+    "resources": [
+        {
+            "name": "storageTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('storageTemplateUri')]"
+                },
+                "parameters": {
+                    "storageAccountName": {
+                        "value": "[variables('storageAccountName')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "keyVaultTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments','storageTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('keyVaultTemplateUri')]"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    },
+                    "sqlServerAdministratorLoginPassword": {
+                        "value": "[parameters('sqlServerAdministratorLoginPassword')]"
+                    },
+                    "storageAccountConnectionStringValue": {
+                        "value": "[reference('storageTemplate').outputs.storageAccountConnectionString.value]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "keyVaultPermissionsUpdateTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments','emptyDataFactory')]",
+                "[resourceId('Microsoft.Resources/deployments','sqlServer')]",
+                "[resourceId('Microsoft.Resources/deployments','storageTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('keyVaultPermissionsUpdateTemplateUri')]"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    },
+                    "factoryName": {
+                        "value": "[variables('factoryName')]"
+                    },
+                    "azureUserObjectId": {
+                        "value": "[parameters('azureUserObjectId')]"
+                    }
+                }
+            }
+        },
+         
+        
+        {
+            "name": "dataFactoryTemplate",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments','emptyDataFactory')]",
+                "[resourceId('Microsoft.Resources/deployments','keyVaultPermissionsUpdateTemplate')]"
+                 
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('dataFactoryTemplateUri')]"
+                },
+                "parameters": {
+                    "factoryName": {
+                        "value": "[variables('factoryName')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "sqlServerAdministratorLogin": {
+                        "value": "[parameters('sqlServerAdministratorLogin')]"
+                    },
+                    "databaseName": {
+                        "value": "[parameters('databaseName')]"
+                    },
+                    "serverName": {
+                        "value": "[variables('serverName')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    }
+                }
+            }
+        },
+       
+        {
+            "name": "emptyDataFactory",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments','keyVaultTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('emptyDataFactoryTemplateUri')]"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "factoryName": {
+                        "value": "[variables('factoryName')]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "sqlServer",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments','keyVaultTemplate')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('sqlServerTemplateUri')]"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "serverName": {
+                        "value": "[variables('serverName')]"
+                    },
+                    "sqlServerAdministratorLogin": {
+                        "value": "[parameters('sqlServerAdministratorLogin')]"
+                    },
+                    "sqlServerAdministratorLoginPassword": {
+                        "value": "[parameters('sqlServerAdministratorLoginPassword')]"
+                    },
+                    "databaseName": {
+                        "value": "[parameters('databaseName')]"
+                    }
+                }
+            }
+        }
+    ]
+}
