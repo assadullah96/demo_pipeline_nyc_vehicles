@@ -70,12 +70,12 @@
         "storageAccountName": "[concat(parameters('storageAccountName'), uniquestring(resourceGroup().id))]",
         "keyVaultName": "[concat(parameters('keyVaultName'), uniquestring(resourceGroup().id))]",
         "serverName": "[concat(parameters('serverName'), uniquestring(resourceGroup().id))]",
-        "storageTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/storageAccount/azuredeploy.json",
-        "keyVaultTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/keyVault/azuredeploy.json",
-        "keyVaultPermissionsUpdateTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/keyVaultPermissionsUpdate/azuredeploy.json",
-        "emptyDataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/dataFactory/azuredeploy.json",
-        "sqlServerTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/sqlServer/azuredeploy.json",
-        "dataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/main/dataFactoryResources/azuredeploy.json"    
+        "storageTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/storageAccount/azuredeploy.json",
+        "keyVaultTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/keyVault/azuredeploy.json",
+        "keyVaultPermissionsUpdateTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/keyVaultPermissionsUpdate/azuredeploy.json",
+        "emptyDataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/dataFactory/azuredeploy.json",
+        "sqlServerTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/sqlServer/azuredeploy.json",
+        "dataFactoryTemplateUri": "https://raw.githubusercontent.com/assadullah96/demo_pipeline_nyc_vehicles/master/dataFactoryResources/azuredeploy.json"    
     },
     "resources": [
         {
